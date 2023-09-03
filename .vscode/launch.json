@@ -13,6 +13,16 @@
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/src/server.js",
       "internalConsoleOptions": "openOnFirstSessionStart"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "DB Seed",
+      "console": "integratedTerminal",
+      "outFiles": ["${workspaceFolder}/**/*.js", "!**/node_modules/**"],
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/scripts/seed.js",
+      "internalConsoleOptions": "openOnFirstSessionStart"
     }
   ]
 }

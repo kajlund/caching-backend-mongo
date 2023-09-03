@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 
+import db from './db/db.js'
 const app = express()
 
 // Middleware to handle incoming JSON payloads
@@ -26,5 +27,6 @@ app.get('/ping', (req, res) => {
 // Error Handler
 
 // Connect to DB
+db.connect()
 
 export default app
