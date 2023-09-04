@@ -6,7 +6,6 @@ import log from '../src/utils/log.js'
 import db from '../src/db/db.js'
 
 import Cache from '../src/api/caches/cache.model.js'
-import Comment from '../src/api/comments/comment.model.js'
 import Place from '../src/api/places/place.model.js'
 import User from '../src/api/users/user.model.js'
 
@@ -66,15 +65,17 @@ const seedCaches = async () => {
   try {
     // Delete all
     await Cache.deleteMany()
-    const caches = []
+    let userId = await getDefaultUserId()
+    let count = 0
+
     // Loop JSON data and create caceList
     for (const key in cacheData) {
-      let userId = await getDefaultUserId()
       let placeName = cacheData[key].municipality
       const place = await Place.findOne({ $or: [{ nameSv: placeName }, { nameFi: placeName }] })
       if (!place) {
         log.debug(`No municipality found for value: "${cacheData[key].municipality}" GC: ${cacheData[key].cacheId}`)
       }
+      // Verify that GC doesn't exist
       let gc = await Cache.findOne({ gc: cacheData[key].cacheId })
       if (gc) {
         log.info(
@@ -83,7 +84,8 @@ const seedCaches = async () => {
         ${cacheData[key].notes}`,
         )
       } else {
-        caches.push({
+        // Create new cache and add comment if exists
+        let cache = new Cache({
           createdAt: cacheData[key].createdAt,
           updatedAt: cacheData[key].updatedAt,
           gc: cacheData[key].cacheId,
@@ -91,47 +93,24 @@ const seedCaches = async () => {
           name: cacheData[key].name,
           coords: cacheData[key].coords,
           verified: cacheData[key].verifiedCoords,
-          place: place ? place._id.toString() : null,
-          user: userId,
-          comments: cacheData[key].notes ? cacheData[key].notes : '',
+          placeId: place ? place._id.toString() : null,
+          userId: userId,
         })
-      }
-    }
-    await Cache.insertMany(caches)
-    log.info(`Seeded ${caches.length} caches`)
-  } catch (err) {
-    log.error(err, 'Error seeding caches: ')
-  }
-}
-
-const seedComments = async () => {
-  try {
-    // Delete all
-    await Comment.deleteMany()
-    const comments = []
-    let userId = await getDefaultUserId()
-    // Loop JSON data and create commentlist
-    for (const key in cacheData) {
-      let note = cacheData[key].notes
-      if (note) {
-        let cache = await Cache.findOne({ gc: cacheData[key].cacheId }).lean().exec()
-        if (!cache) {
-          log.debug(`No cache found for gc: "${key}"`)
-        } else {
-          comments.push({
-            cache: cache._id.toString(),
-            user: userId,
-            comment: note,
-            createdAt: cacheData[key].createdAt,
-            updatedAt: cacheData[key].updatedAt,
+        // Add note if exists
+        if (cacheData[key].notes) {
+          cache.comments.push({
+            userId,
+            comment: cacheData[key].notes,
           })
         }
+        // Save cache
+        await cache.save()
+        count++
       }
     }
-    await Comment.insertMany(comments)
-    log.info(`Seeded ${comments.length} comments`)
+    log.info(`Seeded ${count} caches`)
   } catch (err) {
-    log.error(err, 'Error seeding comments: ')
+    log.error(err, 'Error seeding caches: ')
   }
 }
 
@@ -142,7 +121,6 @@ const seedData = async () => {
     await seedUsers()
     await seedPlaces()
     await seedCaches()
-    await seedComments()
     process.exit(0)
   } catch (err) {
     log.error(err, 'Error importing data: ')

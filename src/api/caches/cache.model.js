@@ -2,7 +2,6 @@ import mongoose from 'mongoose'
 
 import Place from '../places/place.model.js'
 import User from '../users/user.model.js'
-import Comment from '../comments/comment.model.js'
 
 const Schema = mongoose.Schema
 
@@ -22,6 +21,18 @@ export const CACHETYPES = [
   'Virtual',
   'Webcam',
 ]
+
+const commentSchema = new Schema({
+  comment: {
+    type: String,
+    trim: true,
+  },
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: User,
+    required: [true, 'A comment must belong to a user'],
+  },
+})
 
 const cacheSchema = new Schema(
   {
@@ -50,17 +61,12 @@ const cacheSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    comments: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: Comment,
-      },
-    ],
-    place: {
+    comments: [commentSchema],
+    placeId: {
       type: Schema.Types.ObjectId,
       ref: Place,
     },
-    user: {
+    userId: {
       type: Schema.Types.ObjectId,
       ref: User,
     },
